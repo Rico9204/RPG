@@ -25,7 +25,7 @@ public:
         willing = 20;
         if (!texture.loadFromFile(".\\lib\\frog.png")) {/*error...*/ } //텍스처 불러오기
         player.setTextureRect(sf::IntRect(0, 0, size.x, size.y)); //텍스쳐 모양 선언
-        player.setSize(sf::Vector2f( 80, 120 )); //플레이어 크기
+        player.setSize(sf::Vector2f(80, 120)); //플레이어 크기
         player.setTexture(&texture);
         player.setPosition(sf::Vector2f(500, 250));
     }
@@ -74,9 +74,15 @@ protected:
     sf::Vector2f velocity;
     sf::RectangleShape save;
     sf::RectangleShape load;
-    sf::RectangleShape maru; //마루
+
+    sf::RectangleShape object1; //벽
+    sf::RectangleShape object2; //책장
+    sf::RectangleShape object3; //컴퓨터
+    sf::RectangleShape object4; //쓰레기
+    sf::RectangleShape object5; //침대
+    sf::RectangleShape object6; //폰
+
     sf::RectangleShape room; //방 배경 객체
-    sf::Texture textureMaru; //마루 객체
     sf::Texture textureSave; //save 버튼 텍스쳐
     sf::Texture textureLoad; //load 버튼 텍스쳐
     sf::Texture textureRoom; //room 텍스쳐
@@ -157,10 +163,15 @@ void Level1::update(sf::RenderWindow& window, float dt) {
         window.draw(line);
     }
     printStatus(window, p1);
+    window.draw(room);
     window.draw(save);
     window.draw(load);
-    //window.draw(room);
-    //window.draw(maru);
+    /*window.draw(object1);
+    window.draw(object2);
+    window.draw(object3);
+    window.draw(object4);
+    window.draw(object5);
+    window.draw(object6);*/
     window.draw(p1.player);
 }
 
@@ -246,7 +257,7 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                 std::ifstream file("game_save.txt");
                 if (file.is_open()) {
                     file >> p1.money;
-                    //moneyValue.setString(std::to_string(p1.money));  스테이터스 출력할 코드 넣기
+                    printStatus(window, p1);
                     file.close();
                 }
                 else {
@@ -287,15 +298,6 @@ Level1::Level1() {
         std::cout << "Could not load font" << std::endl;
     }
 
-    ////money 값
-    //money = 0;
-    //moneyValue.setOrigin(0, 25);
-    //moneyValue.setFont(font); //폰트 적용
-    //moneyValue.setString(std::to_string(money)); //출력 문자열
-    //moneyValue.setCharacterSize(20); //문자 크기
-    //moneyValue.setStyle(sf::Text::Bold); //폰트 스타일
-    //moneyValue.setPosition(1100, 40); //글자 위치
-
     //save 버튼
     if (!textureSave.loadFromFile(".\\lib\\save.png")) {/*error...*/ } //텍스처 불러오기
     save.setTextureRect(sf::IntRect(0, 0, 128, 72));
@@ -325,18 +327,44 @@ Level1::Level1() {
     line1.setPosition(gridSize * 25.f, 0.f);
     lines.push_back(line1);
 
+    //이동불가 영역들
+    object1.setFillColor(sf::Color::Red);
+    object1.setSize(sf::Vector2f(1000, 55));
+    object1.setPosition(0, 0);
+    lines.push_back(object1);
+
+    object2.setFillColor(sf::Color::Red);
+    object2.setSize(sf::Vector2f(261, 65));
+    object2.setPosition(233, 30);
+    lines.push_back(object2);
+
+    object3.setFillColor(sf::Color::Red);
+    object3.setSize(sf::Vector2f(280, 110));
+    object3.setPosition(590, 410);
+    lines.push_back(object3);
+
+    object4.setFillColor(sf::Color::Red);
+    object4.setSize(sf::Vector2f(175, 105));
+    object4.setPosition(0, 415);
+    lines.push_back(object4);
+
+    object5.setFillColor(sf::Color::Red);
+    object5.setSize(sf::Vector2f(250, 30));
+    object5.setPosition(747, 150);
+    lines.push_back(object5);
+
+    object6.setFillColor(sf::Color::Red);
+    object6.setSize(sf::Vector2f(45, 50));
+    object6.setPosition(955, 200);
+    lines.push_back(object6);
+
+
     //방 배경
     if (!textureRoom.loadFromFile(".\\lib\\room.png")) {/*error...*/ } //텍스처 불러오기
-    room.setTextureRect(sf::IntRect(0, 0, 1000, 520));
+    room.setTextureRect(sf::IntRect(0, 0, 1000, 560));
     room.setSize(sf::Vector2f(1000, 520));
     room.setTexture(&textureRoom);
 
-    //마루 운다
-    if (!textureMaru.loadFromFile(".\\lib\\maru.png")) {/*error...*/ } //텍스처 불러오기
-    maru.setTextureRect(sf::IntRect(0, 0, 200, 200));
-    maru.setSize(sf::Vector2f(200, 200));
-    maru.setTexture(&textureMaru);
-    maru.setPosition(sf::Vector2f(20, 50));
 }
 
 Game::Game() {
@@ -400,7 +428,7 @@ void Level1::printStatus(sf::RenderWindow& window, Ral player) {
     window.draw(status);
 
     status.setCharacterSize(25);
-    status.setPosition(sf::Vector2f(textPos.x, textPos.y+80));
+    status.setPosition(sf::Vector2f(textPos.x, textPos.y + 80));
     status.setString(L"소지금: " + std::to_wstring(p1.money));
     window.draw(status);
 

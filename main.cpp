@@ -8,14 +8,20 @@
 //*************************** 클래스 정의 ***************************
 class Ral {
 public:
+    int counter =0;
     int money; //소지금
     int clean; //청결도
     int tired; //피로도
     int hunger; //배고픔 
     int willing; //의지
-    sf::Vector2f size = { 40, 40 };
-    sf::Texture texture; //텍스쳐
+    int texPos; //텍스쳐 위치
+    sf::Vector2f size = { 30, 50 };
+    sf::Texture front;
+    sf::Texture back;
+    sf::Texture left;
+    sf::Texture right;
     sf::RectangleShape player; //몸
+
 
     Ral() {
         money = 10000;
@@ -23,12 +29,16 @@ public:
         tired = 0;
         hunger = 50;
         willing = 20;
-        if (!texture.loadFromFile(".\\lib\\frog.png")) {/*error...*/ } //텍스처 불러오기
+        if (!front.loadFromFile(".\\lib\\player_front.png")) {/*error...*/ }
+        if (!back.loadFromFile(".\\lib\\player_back.png")) {/*error...*/ }
+        if (!left.loadFromFile(".\\lib\\player_left.png")) {/*error...*/ }
+        if (!right.loadFromFile(".\\lib\\player_right.png")) {/*error...*/ }
         player.setTextureRect(sf::IntRect(0, 0, size.x, size.y)); //텍스쳐 모양 선언
-        player.setSize(sf::Vector2f(80, 120)); //플레이어 크기
-        player.setTexture(&texture);
+        player.setSize(sf::Vector2f(60, 100)); //플레이어 크기
+        player.setTexture(&front);
         player.setPosition(sf::Vector2f(500, 250));
     }
+
     int getMoney() { return money; }
     int getClean() { return clean; }
     int getHunger() { return hunger; }
@@ -62,7 +72,7 @@ public:
 class Level1 : public Stage {
 protected:
     const float gridSize = 40.f; //격자 크기
-    const float movementSpeed = 400.f;
+    const float movementSpeed = 300.f;
     const unsigned window_width = 1280;
     const unsigned window_height = 720;
 
@@ -153,6 +163,31 @@ void Level1::update(sf::RenderWindow& window, float dt) {
 
     p1.player.move(velocity * dt);
 
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+        p1.player.setTexture(&p1.front);
+        p1.texPos = p1.counter++ /30 % 12;
+        p1.texPos = p1.texPos * 30;
+        p1.player.setTextureRect(sf::IntRect(p1.texPos % 360, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+        p1.player.setTexture(&p1.back);
+        p1.texPos = p1.counter++ / 30 % 12;
+        p1.texPos = p1.texPos * 30;
+        p1.player.setTextureRect(sf::IntRect(p1.texPos % 360, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+        p1.player.setTexture(&p1.left);
+        p1.texPos = p1.counter++ / 30 % 12;
+        p1.texPos = p1.texPos * 30;
+        p1.player.setTextureRect(sf::IntRect(p1.texPos % 360, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+        p1.player.setTexture(&p1.right);
+        p1.texPos = p1.counter++ / 30 % 12;
+        p1.texPos = p1.texPos * 30;
+        p1.player.setTextureRect(sf::IntRect(p1.texPos % 360, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
+    }
+
     // Player가 화면 바깥으로 나가는 것을 막는 코드
     if (p1.player.getPosition().x < 0) p1.player.setPosition(0, p1.player.getPosition().y);
     if (p1.player.getPosition().y < 0) p1.player.setPosition(p1.player.getPosition().x, 0);
@@ -233,6 +268,16 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
             velocity.x = 0.f;
         }
     }
+
+    if (event.type == sf::Event::KeyReleased) {
+        if (event.key.code == sf::Keyboard::W ||
+            event.key.code == sf::Keyboard::S ||
+            event.key.code == sf::Keyboard::A ||
+            event.key.code == sf::Keyboard::D ) {
+            p1.player.setTextureRect(sf::IntRect(0, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
+        }
+    }
+
     if (event.type == sf::Event::MouseButtonPressed) {
         if (event.mouseButton.button == sf::Mouse::Left) {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
@@ -241,7 +286,11 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                 std::cout << "save game data" << std::endl;
                 std::ofstream file("game_save.txt");
                 if (file.is_open()) {
-                    file << p1.money << "\n";
+                    file << "money: " << p1.money << "\n";
+                    file << "tired: " << p1.tired << "\n";
+                    file << "clean: " << p1.clean << "\n";
+                    file << "hunger: " << p1.hunger << "\n";
+                    file << "willing: " << p1.willing << "\n";
                     file.close();
                 }
                 else {
@@ -256,8 +305,25 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                 std::cout << "load game data" << std::endl;
                 std::ifstream file("game_save.txt");
                 if (file.is_open()) {
-                    file >> p1.money;
-                    printStatus(window, p1);
+                    std::ifstream file("game_save.txt");
+                    std::string line;
+                    while (std::getline(file, line)) {
+                        if (line.find("money: ") != std::string::npos) {
+                            p1.money = std::stoi(line.substr(line.find("money: ") + 7));
+                        }
+                        else if (line.find("tired: ") != std::string::npos) {
+                            p1.tired = std::stoi(line.substr(line.find("tired: ") + 7));
+                        }
+                        else if (line.find("clean: ") != std::string::npos) {
+                            p1.clean = std::stoi(line.substr(line.find("clean: ") + 7));
+                        }
+                        else if (line.find("hunger: ") != std::string::npos) {
+                            p1.hunger = std::stoi(line.substr(line.find("hunger: ") + 8));
+                        }
+                        else if (line.find("willing: ") != std::string::npos) {
+                            p1.willing = std::stoi(line.substr(line.find("willing: ") + 9));
+                        }
+                    }
                     file.close();
                 }
                 else {
@@ -329,12 +395,12 @@ Level1::Level1() {
 
     //이동불가 영역들
     object1.setFillColor(sf::Color::Red);
-    object1.setSize(sf::Vector2f(1000, 55));
+    object1.setSize(sf::Vector2f(1000, 75));
     object1.setPosition(0, 0);
     lines.push_back(object1);
 
     object2.setFillColor(sf::Color::Red);
-    object2.setSize(sf::Vector2f(261, 65));
+    object2.setSize(sf::Vector2f(261, 85));
     object2.setPosition(233, 30);
     lines.push_back(object2);
 
@@ -349,12 +415,12 @@ Level1::Level1() {
     lines.push_back(object4);
 
     object5.setFillColor(sf::Color::Red);
-    object5.setSize(sf::Vector2f(250, 30));
+    object5.setSize(sf::Vector2f(250, 50));
     object5.setPosition(747, 150);
     lines.push_back(object5);
 
     object6.setFillColor(sf::Color::Red);
-    object6.setSize(sf::Vector2f(45, 50));
+    object6.setSize(sf::Vector2f(45, 70));
     object6.setPosition(955, 200);
     lines.push_back(object6);
 
@@ -449,7 +515,6 @@ void Level1::printStatus(sf::RenderWindow& window, Ral player) {
     window.draw(status);
 
 }
-
 
 int main() {
     srand(static_cast<unsigned int>(time(0)));

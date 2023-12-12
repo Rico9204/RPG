@@ -55,11 +55,22 @@ public:
     virtual void onExit() = 0; //스테이지 나가기
 };
 
-class Menu : public Stage {
+class Menu : public Stage  {
 private:
-    sf::Font font;
-    sf::Text text;
-    sf::RectangleShape rect;
+    int counter = 0;
+    bool isControlOpen;
+    sf::Vector2f velocity;
+    sf::Texture titleTex;
+    sf::Texture backgroudTex;
+    sf::Texture playTex;
+    sf::Texture controlTex;
+    sf::Texture controlWindowTex;
+    sf::RectangleShape closeButton;
+    sf::RectangleShape controlWindow;
+    sf::RectangleShape play;
+    sf::RectangleShape control;
+    sf::RectangleShape title;
+    sf::RectangleShape background;
 
 public:
     Menu();
@@ -130,7 +141,6 @@ void Level1::onEnter() {
 
 void Menu::onExit() {
     std::cout << "You are leaving the menu." << std::endl;
-
 }
 
 void Level1::onExit() {
@@ -140,9 +150,39 @@ void Level1::onExit() {
 
 // ************************** update()함수 **************************
 void Menu::update(sf::RenderWindow& window, float dt) {
-    window.clear(sf::Color::Blue);
-    window.draw(rect);
-    window.draw(text);
+    window.clear(sf::Color::Black);
+    window.draw(background);
+    window.draw(title);
+    window.draw(control);
+    window.draw(play);
+
+    title.move(velocity * dt);
+    if (title.getPosition().y < 330) {
+        velocity.y = -velocity.y;
+        title.setPosition(640, 331);
+    }
+    else if (title.getPosition().y > 360) {
+        velocity.y = -velocity.y;
+        title.setPosition(640, 359); 
+    }
+    if (isControlOpen) {
+        window.draw(controlWindow);
+    }
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+    sf::FloatRect boundsP = play.getGlobalBounds();
+    sf::FloatRect boundsC = control.getGlobalBounds();
+
+    if (boundsP.contains(mousePos.x, mousePos.y)) {
+        play.setFillColor(sf::Color(200, 200, 200));        }
+    else play.setFillColor(sf::Color::White);
+    if (boundsC.contains(mousePos.x, mousePos.y)) {
+        control.setFillColor(sf::Color(200, 200, 200));     }
+    else control.setFillColor(sf::Color::White);
+
+    if (isControlOpen) {
+        counter += 1;
+        controlWindow.setTextureRect(sf::IntRect(0, counter / 1200 % 4 * 90, 160, 90)); //텍스쳐 모양 선언
+    }
 }
 
 void Level1::update(sf::RenderWindow& window, float dt) {
@@ -211,17 +251,34 @@ void Level1::update(sf::RenderWindow& window, float dt) {
 }
 
 // ************************** handleinput **************************
-void Menu::handleinput(sf::RenderWindow& window, sf::Event& event) {
+void Menu::handleinput(sf::RenderWindow& window, sf::Event& event) { 
     if (event.type == sf::Event::Closed) {
         window.close();
     }
     if (event.type == sf::Event::MouseButtonPressed) {
         if (event.mouseButton.button == sf::Mouse::Left) {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
-            sf::FloatRect bounds = rect.getGlobalBounds();
+            sf::FloatRect bounds = play.getGlobalBounds();
             if (bounds.contains(mousePos.x, mousePos.y)) {
                 std::cout << "Changing to game" << std::endl;
                 onExit();
+            }
+        }
+        if (event.mouseButton.button == sf::Mouse::Left) {
+            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+            sf::FloatRect bounds = control.getGlobalBounds();
+            if (bounds.contains(mousePos.x, mousePos.y)) {
+                std::cout << "open control window" << std::endl;
+                isControlOpen = true;
+            }
+        }
+        if (event.mouseButton.button == sf::Mouse::Left) {
+            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+            sf::FloatRect bounds = closeButton.getGlobalBounds();
+            if (bounds.contains(mousePos.x, mousePos.y)) {
+                std::cout << "close control window" << std::endl;
+                isControlOpen = false;
+                counter = 0;
             }
         }
     }
@@ -332,31 +389,49 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
             }
         }
     }
-    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::P) {
-        std::cout << "Changing to menu" << std::endl;
-        onExit();
-    }
 }
 
 // ************************* 생성자 함수 ***********************
 
 Menu::Menu() {
-    if (!font.loadFromFile(".\\lib\\Maplestory Light.ttf")) { //폰트 업로드
-        std::cout << "Could not load font" << std::endl;
-    }
+    isControlOpen = false;
+    velocity = { 0, -20 };
 
-    text.setOrigin(135, 25);
-    text.setFont(font); //폰트 적용
-    text.setString("BaeksuGame"); //출력 문자열
-    text.setCharacterSize(40); //문자 크기
-    text.setFillColor(sf::Color::Red); //문자 색상
-    text.setStyle(sf::Text::Bold); //폰트 스타일
-    text.setPosition(640, 360); //글자 위치
+    if (!backgroudTex.loadFromFile(".\\lib\\background.png")) {/*error...*/ } //텍스처 불러오기
+    background.setTextureRect(sf::IntRect(0, 0, 1280, 720));
+    background.setTexture(&backgroudTex);
+    background.setSize(sf::Vector2f(1280, 720));
 
-    rect.setOrigin(150, 20);
-    rect.setSize(sf::Vector2f(300, 40));
-    rect.setPosition(sf::Vector2f(text.getPosition()));
-    rect.setFillColor(sf::Color::Green);
+    if (!titleTex.loadFromFile(".\\lib\\title.png")) {/*error...*/ } //텍스처 불러오기
+    title.setTextureRect(sf::IntRect(0, 0, 650, 650));
+    title.setTexture(&titleTex);
+    title.setOrigin(325, 325);
+    title.setSize(sf::Vector2f(650, 650));
+    title.setPosition(640, 350);
+
+    if (!playTex.loadFromFile(".\\lib\\play.png")) {/*error...*/ } //텍스처 불러오기
+    play.setTextureRect(sf::IntRect(0, 0, 50, 30));
+    play.setTexture(&playTex);
+    play.setOrigin(25, 15);
+    play.setSize(sf::Vector2f(150, 90));
+    play.setPosition(490, 600);
+
+    if (!controlTex.loadFromFile(".\\lib\\control.png")) {/*error...*/ } //텍스처 불러오기
+    control.setTextureRect(sf::IntRect(0, 0, 50, 30));
+    control.setTexture(&controlTex);
+    control.setOrigin(25, 15);
+    control.setSize(sf::Vector2f(150, 90));
+    control.setPosition(690, 600);
+
+    if (!controlWindowTex.loadFromFile(".\\lib\\controlWindow.png")) {/*error...*/ } //텍스처 불러오기
+    controlWindow.setTextureRect(sf::IntRect(0, 0, 160, 90));
+    controlWindow.setTexture(&controlWindowTex);
+    controlWindow.setOrigin(320, 180);
+    controlWindow.setSize(sf::Vector2f(640, 360));
+    controlWindow.setPosition(640, 360);
+
+    closeButton.setSize(sf::Vector2f(10, 10));
+    closeButton.setPosition(950, 180);
 }
 
 Level1::Level1() {
@@ -437,7 +512,7 @@ Game::Game() {
 
     window.create(sf::VideoMode(1280, 720), "Baeksu Simulator");
     sf::Image icon; //아이콘 객체
-    if (!icon.loadFromFile(".\\lib\\ral.png"))  // 아이콘 경로 설정
+    if (!icon.loadFromFile(".\\lib\\icon.png"))  // 아이콘 경로 설정
     {  /* 이미지 파일 로드 실패 시 처리*/
     }
     window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr()); //아이콘 적용
@@ -465,17 +540,22 @@ void Game::run() {
             }
             currentStage->handleinput(window, event);
 
-            if (event.type == sf::Event::KeyPressed) {
-                // 현재 stage가 'menu'인 경우에만 'O' 키를 처리
-                if (currentStage == stages["menu"].get() && event.key.code == sf::Keyboard::O) {
-                    currentStage->onExit();
-                    changeStage("level1");
+            if (event.type == sf::Event::MouseButtonPressed) {
+                if (currentStage == stages["menu"].get() &&  event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                    sf::FloatRect bounds = { 465, 585, 150, 90 };
+                    if (bounds.contains(mousePos.x, mousePos.y)) {
+                        std::cout << "Changing to game" << std::endl;
+                        changeStage("level1");
+                    }
                 }
-                else if (event.key.code == sf::Keyboard::P) {
-                    currentStage->onExit();
+            }
+            if (event.type == sf::Event::KeyPressed) {
+                if (currentStage == stages["level1"].get() && event.key.code == sf::Keyboard::Escape) {
                     changeStage("menu");
                 }
             }
+                
         }
 
         float dt = clock.restart().asSeconds();
@@ -521,5 +601,4 @@ int main() {
     Game game;
     game.run();
     return 0;
-
 }

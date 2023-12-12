@@ -6,12 +6,120 @@
 #include <string.h>
 
 //*************************** 클래스 정의 ***************************
+class Phone {
+public:
+    int selectedFoodIndex;
+    bool isPhoneEnter;
+    sf::FloatRect body;
+    std::vector<std::wstring> foods = { L"제육볶음", L"낙곱새", L"마라탕", L"벌꿀집 아이스크림" };
+    std::vector<int> prices = { 3000, 6000, 9000, 12000 };
+    std::vector<int> hunger = { 20, 40, 60, 80 };
+    Phone() {
+        selectedFoodIndex = -1;
+        body = { 870, 200, 100, 100 };
+        bool isPhoneEnter = false;
+    }
+    void selectFood(int index) {
+        if (index >= 0 && index < foods.size()) {
+            selectedFoodIndex = index;
+        }
+    }
+    std::wstring eatFood() {
+        if (selectedFoodIndex != -1) {
+            std::wstring food = foods[selectedFoodIndex];
+            return food;
+        }
+        return L"";
+    }
+    std::wstring getFood(int index) {
+        if (index >= 0 && index < foods.size()) {
+            return foods[index];
+        }
+        return L"";
+    }
+    int getFoodPrice(int index) {
+        if (index >= 0 && index < prices.size()) {
+            int price = prices[index];
+            return price;
+        }
+    }
+    int RiseHunger(int index) {
+        if (index >= 0 && index < hunger.size()) {
+            int Hung = hunger[index];
+            return Hung;
+        }
+    }
+};
+
+class Coin {
+public:
+    long int profit;
+    int investUnit;
+    int investAmount;
+    int selectedCoinIndex;
+    bool isCoinEnter;
+    bool isChoosingCoin;
+    bool isProfitHappen;
+    sf::FloatRect body;
+    std::wstring bitcoinToInvest;
+    std::vector<std::wstring> bitcoins = { L"비트코스", L"스트라티스", L"스택스", L"스팀달러" };
+
+    Coin() {
+        profit = 0;
+        investUnit = 10;
+        investAmount = 10;
+        selectedCoinIndex = -1;
+        isProfitHappen = false;
+        isCoinEnter = false;
+        isChoosingCoin = false;
+        body = {650, 308, 90, 102};
+    }
+    std::wstring getBitcoinName(int index) {
+        if (index >= 0 && index < bitcoins.size()) {
+            return bitcoins[index];
+        }
+        return L"";
+    }
+    void selectBitcoin(int index) {
+        if (index >= 0 && index < bitcoins.size()) {
+            selectedCoinIndex = index;
+        }
+    }
+    void setInvestAmount(int amount) {
+        investAmount = amount;
+    }
+    int getProfit() {
+        return profit;
+    }
+    std::wstring investBitcoin(int money) {
+        if (money < investAmount) {
+            return L"돈이 충분하지 않습니다!";
+            isProfitHappen = false;
+        }
+        float randomPercent =  static_cast <float> (rand()) / static_cast <float> (RAND_MAX / 4) - 2;
+        profit = static_cast <int> (investAmount * randomPercent * (selectedCoinIndex+1));
+        money = profit - investAmount;
+        if (profit > 0 ) {
+            isProfitHappen = true;
+            return bitcoins[selectedCoinIndex] + L"을 통해 " + std::to_wstring(profit) + L"의 수익을 냈습니다. 대단하네요!";
+        }
+        if (profit < investAmount ) {
+            isProfitHappen = true;
+            return bitcoins[selectedCoinIndex] + L"을 통해 " + std::to_wstring(profit) + L"의 손해를 봤습니다. 아쉽네요..";
+        }
+        if (profit == investAmount )  {
+            isProfitHappen = true;
+            return bitcoins[selectedCoinIndex] + L"을 통해 " + std::to_wstring(investAmount) + L"의 원금을 회수했습니다. 다행이네요";
+        }
+    }
+};
+
 class Ral {
 public:
-    int counter =0;
-    int money; //소지금
+    int counter = 0;
+    long int money; //소지금
     int clean; //청결도
-    int tired; //피로도
+    int stamina; //피로도
     int hunger; //배고픔 
     int willing; //의지
     int texPos; //텍스쳐 위치
@@ -21,30 +129,7 @@ public:
     sf::Texture left;
     sf::Texture right;
     sf::RectangleShape player; //몸
-
-
-    Ral() {
-        money = 10000;
-        clean = 30;
-        tired = 0;
-        hunger = 50;
-        willing = 20;
-        if (!front.loadFromFile(".\\lib\\player_front.png")) {/*error...*/ }
-        if (!back.loadFromFile(".\\lib\\player_back.png")) {/*error...*/ }
-        if (!left.loadFromFile(".\\lib\\player_left.png")) {/*error...*/ }
-        if (!right.loadFromFile(".\\lib\\player_right.png")) {/*error...*/ }
-        player.setTextureRect(sf::IntRect(0, 0, size.x, size.y)); //텍스쳐 모양 선언
-        player.setSize(sf::Vector2f(60, 100)); //플레이어 크기
-        player.setTexture(&front);
-        player.setPosition(sf::Vector2f(500, 250));
-    }
-
-    int getMoney() { return money; }
-    int getClean() { return clean; }
-    int getHunger() { return hunger; }
-    int getWilling() { return willing; }
-    sf::RectangleShape getPlayer() { return player; }
-    sf::Vector2f getSize() { return size; }
+    Ral();
 };
 
 class Stage {
@@ -82,12 +167,20 @@ public:
 
 class Level1 : public Stage {
 protected:
+    bool isBathroomEnter;
+    bool isBedEnter;
+
     const float gridSize = 40.f; //격자 크기
     const float movementSpeed = 300.f;
     const unsigned window_width = 1280;
     const unsigned window_height = 720;
 
+    sf::Clock actionTextClock;
+    Phone phone;
+    Coin coin;
     Ral p1;
+    sf::Text actionText;
+    sf::Text questionText;
     sf::Text status;
     sf::Vector2f textPos = { 1035, 10 };
     sf::Font font;
@@ -102,6 +195,9 @@ protected:
     sf::RectangleShape object4; //쓰레기
     sf::RectangleShape object5; //침대
     sf::RectangleShape object6; //폰
+
+    sf::FloatRect bathroomRect; 
+    sf::FloatRect bedRect;
 
     sf::RectangleShape room; //방 배경 객체
     sf::Texture textureSave; //save 버튼 텍스쳐
@@ -202,28 +298,30 @@ void Level1::update(sf::RenderWindow& window, float dt) {
     }
 
     p1.player.move(velocity * dt);
+    
+    if (coin.investUnit < 1) coin.investUnit = 1;
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
         p1.player.setTexture(&p1.front);
-        p1.texPos = p1.counter++ /30 % 12;
+        p1.texPos = p1.counter++ / 160 % 12;
         p1.texPos = p1.texPos * 30;
         p1.player.setTextureRect(sf::IntRect(p1.texPos % 360, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
         p1.player.setTexture(&p1.back);
-        p1.texPos = p1.counter++ / 30 % 12;
+        p1.texPos = p1.counter++ / 160 % 12;
         p1.texPos = p1.texPos * 30;
         p1.player.setTextureRect(sf::IntRect(p1.texPos % 360, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
         p1.player.setTexture(&p1.left);
-        p1.texPos = p1.counter++ / 30 % 12;
+        p1.texPos = p1.counter++ / 160 % 12;
         p1.texPos = p1.texPos * 30;
         p1.player.setTextureRect(sf::IntRect(p1.texPos % 360, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
         p1.player.setTexture(&p1.right);
-        p1.texPos = p1.counter++ / 30 % 12;
+        p1.texPos = p1.counter++ / 160 % 12;
         p1.texPos = p1.texPos * 30;
         p1.player.setTextureRect(sf::IntRect(p1.texPos % 360, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
     }
@@ -233,6 +331,10 @@ void Level1::update(sf::RenderWindow& window, float dt) {
     if (p1.player.getPosition().y < 0) p1.player.setPosition(p1.player.getPosition().x, 0);
     if (p1.player.getPosition().x > window_width - gridSize) p1.player.setPosition(window_width - gridSize, p1.player.getPosition().y);
     if (p1.player.getPosition().y > window_height - gridSize) p1.player.setPosition(p1.player.getPosition().x, window_height - gridSize);
+
+    if ((actionText.getString() != "" && actionTextClock.getElapsedTime().asSeconds() > 3.f) || coin.isCoinEnter) {
+        actionText.setString("");
+    }
 
     for (auto& line : lines) {
         window.draw(line);
@@ -248,6 +350,8 @@ void Level1::update(sf::RenderWindow& window, float dt) {
     window.draw(object5);
     window.draw(object6);*/
     window.draw(p1.player);
+    window.draw(actionText);
+    window.draw(questionText);
 }
 
 // ************************** handleinput **************************
@@ -292,29 +396,151 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
         velocity.y = -movementSpeed;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
         velocity.y = movementSpeed;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
         velocity.x = -movementSpeed;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
         velocity.x = movementSpeed;
     }
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+        if (coin.body.contains(p1.player.getPosition()) && coin.isCoinEnter == false && questionText.getString() == L"") {
+            coin.isCoinEnter = true;
+            questionText.setString(L"투자할 비트코인을 고르자\n1: 비트코스\n2: 스트라티스\n3: 스택스\n4: 스팀달러");
+        }
+        if (bathroomRect.contains(p1.player.getPosition()) && isBathroomEnter == false && questionText.getString() == L"") {
+            if (actionTextClock.getElapsedTime().asSeconds() < 2.5) actionText.setString(L"");
+            isBathroomEnter = true;
+            questionText.setString(L"몸을 씻을까? Y/N");
+        }
+        if (bedRect.contains(p1.player.getPosition()) && isBedEnter == false && questionText.getString() == L"") {
+            if (actionTextClock.getElapsedTime().asSeconds() < 2.5) actionText.setString(L"");
+            isBedEnter = true;
+            questionText.setString(L"지금 잠을 잘까? Y/N");
+        }
+        if (phone.body.contains(p1.player.getPosition()) && phone.isPhoneEnter == false && questionText.getString() == L"") {
+            if (actionTextClock.getElapsedTime().asSeconds() < 2.5) actionText.setString(L"");
+            phone.isPhoneEnter = true;
+            questionText.setString(L"폰으로 배달을 시킬까? Y/N");
+        }
+    }
 
-    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Up) {
-        p1.money += 100;
+    else if (event.key.code == sf::Keyboard::Num1 || event.key.code == sf::Keyboard::Num2 ||
+        event.key.code == sf::Keyboard::Num3 || event.key.code == sf::Keyboard::Num4) {
+        if (coin.isCoinEnter) {
+            coin.selectedCoinIndex = event.key.code - sf::Keyboard::Num1;
+            coin.selectBitcoin(coin.selectedCoinIndex);
+            coin.isCoinEnter = false;
+            coin.isChoosingCoin = true;
+        }
+    }
+    else if (coin.isChoosingCoin && !coin.isCoinEnter) {
+        if (event.key.code == sf::Keyboard::Up) {
+            coin.investAmount += coin.investUnit;
+        }
+        else if (event.key.code == sf::Keyboard::Down) {
+            coin.investAmount -= coin.investUnit;
+            if (coin.investAmount < 0) coin.investAmount = 0;
+        }
+        else if (event.key.code == sf::Keyboard::Right) {
+            coin.investUnit *= 10;
+            if (coin.investUnit > 10000000000) coin.investUnit /= 10;
+        }
+        else if (event.key.code == sf::Keyboard::Left) {
+            coin.investUnit /= 10;
+            if (coin.investUnit < 0) coin.investUnit = 1;
+        }
+        questionText.setString("L");
+        questionText.setString(L"투자하려면 방향키 키보드를 통해 금액을 조정후 엔터를 누르세요\n상, 하: 현재 자리수 1씩 증가\n좌, 우: 최고 자리수 증가\n" + std::to_wstring(coin.investAmount) + L" 만큼 투자하기");
+    }
+    
+    if (event.type == sf::Event::KeyReleased) {
+        if (event.key.code == sf::Keyboard::Enter && coin.isChoosingCoin && coin.investAmount > 0) {
+            questionText.setString("");
+            coin.setInvestAmount(coin.investAmount);
+            std::wstring result = coin.investBitcoin(p1.money);
+            actionText.setString(result);
+            if (coin.isProfitHappen) {
+                p1.willing -= 5;
+                p1.stamina -= 5;
+                p1.hunger -= 5;
+                coin.isProfitHappen = false;
+            }
+            coin.isChoosingCoin = false;
+            coin.investAmount = 10; 
+            coin.investUnit = 10; 
+            p1.money += coin.getProfit();
+            actionTextClock.restart();
+        }
+        if(event.key.code == sf::Keyboard::Y){
+            if (isBathroomEnter) {
+                if (p1.clean < 100) {
+                    p1.clean += 40;
+                    p1.stamina -= 5;
+                    p1.hunger -= 5;
+                    questionText.setString(L"");
+                    actionText.setString(L"몸을 깨끗이 씻었습니다!");
+                    if (p1.clean >= 100) p1.clean = 100;
+                    actionTextClock.restart();
+                    isBathroomEnter = false;
+                }
+                else if (p1.clean == 100) {
+                    questionText.setString(L"");
+                    actionText.setString(L"지금은 씻을 필요가 없을 것 같다");
+                    actionTextClock.restart();
+                    isBathroomEnter = false;
+                }
+            }
+            else if (isBedEnter) {
+                if (p1.stamina <= 20) {
+                    p1.stamina += 80;
+                    p1.hunger -= 60;
+                    p1.clean -= 40;
+                    questionText.setString(L"");
+                    actionText.setString(L"자고 일어났습니다\n개운하네요");
+                    //화면 페이드 아웃
+                    actionTextClock.restart();
+                    isBedEnter = false;
+                }
+                else {
+                    questionText.setString(L"");
+                    actionText.setString(L"아직은 잠이 안온다...");
+                    actionTextClock.restart();
+                    isBedEnter = false;
+                }   
+            }
+            else if (phone.isPhoneEnter) {
+                if (p1.hunger < 20) {
+                    questionText.setString(L"뭘 먹을까?\n1:제육볶음\n2:낙곱새\n3:마라탕\n4:벌꿀집 아이스크림");
+                    phone.isPhoneEnter = true;
+                }
+                else {
+                    questionText.setString(L"");
+                    actionText.setString(L"아직은 배가 안고프다...");
+                    actionTextClock.restart();
+                    phone.isPhoneEnter = false;
+                }
+            }
+            else if ((event.key.code == sf::Keyboard::Num1 || event.key.code == sf::Keyboard::Num2 ||
+                event.key.code == sf::Keyboard::Num3 || event.key.code == sf::Keyboard::Num4) && phone.isPhoneEnter) {
+                int foodindex = event.key.code - sf::Keyboard::Num1;
+                phone.selectFood(foodindex);
+                questionText.setString(phone.getFood(foodindex) + L"를 드시겠습니까? Y/N");
+            }
 
+        }
+        if (event.key.code == sf::Keyboard::N) {
+            if (isBathroomEnter || isBedEnter || phone.isPhoneEnter) {
+                questionText.setString(L"");
+                isBathroomEnter = false;
+                isBedEnter = false;
+                phone.isPhoneEnter = false;
+            }
+        }
     }
-    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Right) {
-        p1.money += 1;
-    }
-    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Down) {
-        p1.money -= 100;
-    }
-    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Left) {
-        p1.money -= 1;
-    }
+
     if (event.type == sf::Event::KeyReleased) {
         if (event.key.code == sf::Keyboard::W ||
             event.key.code == sf::Keyboard::S) {
@@ -331,6 +557,7 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
             event.key.code == sf::Keyboard::S ||
             event.key.code == sf::Keyboard::A ||
             event.key.code == sf::Keyboard::D ) {
+            p1.counter = 0;
             p1.player.setTextureRect(sf::IntRect(0, 0, p1.size.x, p1.size.y)); //텍스쳐 모양 선언
         }
     }
@@ -344,7 +571,7 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                 std::ofstream file("game_save.txt");
                 if (file.is_open()) {
                     file << "money: " << p1.money << "\n";
-                    file << "tired: " << p1.tired << "\n";
+                    file << "stamina: " << p1.stamina << "\n";
                     file << "clean: " << p1.clean << "\n";
                     file << "hunger: " << p1.hunger << "\n";
                     file << "willing: " << p1.willing << "\n";
@@ -368,8 +595,8 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                         if (line.find("money: ") != std::string::npos) {
                             p1.money = std::stoi(line.substr(line.find("money: ") + 7));
                         }
-                        else if (line.find("tired: ") != std::string::npos) {
-                            p1.tired = std::stoi(line.substr(line.find("tired: ") + 7));
+                        else if (line.find("stamina: ") != std::string::npos) {
+                            p1.stamina = std::stoi(line.substr(line.find("stamina: ") + 7));
                         }
                         else if (line.find("clean: ") != std::string::npos) {
                             p1.clean = std::stoi(line.substr(line.find("clean: ") + 7));
@@ -435,6 +662,11 @@ Menu::Menu() {
 }
 
 Level1::Level1() {
+    isBedEnter = false;
+    isBathroomEnter = false;
+    bathroomRect = { 560, 0, 50, 100 };
+    bedRect = { 670, 0, 300, 250 };
+
     if (!font.loadFromFile(".\\lib\\Maplestory Light.ttf")) { //폰트 업로드
         std::cout << "Could not load font" << std::endl;
     }
@@ -506,21 +738,48 @@ Level1::Level1() {
     room.setSize(sf::Vector2f(1000, 520));
     room.setTexture(&textureRoom);
 
+    actionText.setFont(font);
+    actionText.setCharacterSize(24);
+    actionText.setFillColor(sf::Color::White);
+    actionText.setStyle(sf::Text::Bold);
+    actionText.setPosition(10, lines[0].getPosition().y + lines[0].getGlobalBounds().height + 10);
+
+    questionText.setFont(font);
+    questionText.setCharacterSize(24);
+    questionText.setFillColor(sf::Color::White);
+    questionText.setStyle(sf::Text::Bold);
+    questionText.setPosition(10, lines[0].getPosition().y + lines[0].getGlobalBounds().height + 10);
+
+
 }
 
 Game::Game() {
-
     window.create(sf::VideoMode(1280, 720), "Baeksu Simulator");
     sf::Image icon; //아이콘 객체
     if (!icon.loadFromFile(".\\lib\\icon.png"))  // 아이콘 경로 설정
-    {  /* 이미지 파일 로드 실패 시 처리*/
-    }
+    {  /* 이미지 파일 로드 실패 시 처리*/   }
     window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr()); //아이콘 적용
     stages["menu"] = std::make_unique<Menu>();
     stages["level1"] = std::make_unique<Level1>();
     currentStage = stages["menu"].get();
     currentStage->onEnter();
 
+}
+
+Ral::Ral() {
+    money = 10000;
+    clean = 50;
+    stamina = 100;
+    hunger = 50;
+    willing = 20;
+    if (!front.loadFromFile(".\\lib\\player_front.png")) {/*error...*/ }
+    if (!back.loadFromFile(".\\lib\\player_back.png")) {/*error...*/ }
+    if (!left.loadFromFile(".\\lib\\player_left.png")) {/*error...*/ }
+    if (!right.loadFromFile(".\\lib\\player_right.png")) {/*error...*/ }
+    player.setTextureRect(sf::IntRect(0, 0, size.x, size.y)); //텍스쳐 모양 선언
+    player.setSize(sf::Vector2f(60, 100)); //플레이어 크기
+    player.setTexture(&front);
+    player.setPosition(sf::Vector2f(500, 250));
 }
 
 // ********************** Game() 메소드  ************************
@@ -579,7 +838,7 @@ void Level1::printStatus(sf::RenderWindow& window, Ral player) {
     window.draw(status);
 
     status.setPosition(sf::Vector2f(textPos.x, textPos.y + 160));
-    status.setString(L"피로도: " + std::to_wstring(p1.tired));
+    status.setString(L"스테미너: " + std::to_wstring(p1.stamina));
     window.draw(status);
 
     status.setPosition(sf::Vector2f(textPos.x, textPos.y + 240));

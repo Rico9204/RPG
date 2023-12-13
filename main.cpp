@@ -19,11 +19,6 @@ public:
         body = { 870, 200, 100, 100 };
         bool isPhoneEnter = false;
     }
-    void selectFood(int index) {
-        if (index >= 0 && index < foods.size()) {
-            selectedFoodIndex = index;
-        }
-    }
     std::wstring eatFood() {
         if (selectedFoodIndex != -1) {
             std::wstring food = foods[selectedFoodIndex];
@@ -36,18 +31,6 @@ public:
             return foods[index];
         }
         return L"";
-    }
-    int getFoodPrice(int index) {
-        if (index >= 0 && index < prices.size()) {
-            int price = prices[index];
-            return price;
-        }
-    }
-    int RiseHunger(int index) {
-        if (index >= 0 && index < hunger.size()) {
-            int Hung = hunger[index];
-            return Hung;
-        }
     }
 };
 
@@ -167,8 +150,14 @@ public:
 
 class Level1 : public Stage {
 protected:
+    int fadeValue;
     bool isBathroomEnter;
     bool isBedEnter;
+    bool isDoorEnter;
+    bool isTrashEnter;
+    bool isBooksEnter;
+    bool isFadeoutEnter;
+    bool isFadeinEnter;
 
     const float gridSize = 40.f; //격자 크기
     const float movementSpeed = 300.f;
@@ -188,6 +177,7 @@ protected:
     sf::Vector2f velocity;
     sf::RectangleShape save;
     sf::RectangleShape load;
+    sf::RectangleShape fade;
 
     sf::RectangleShape object1; //벽
     sf::RectangleShape object2; //책장
@@ -196,8 +186,11 @@ protected:
     sf::RectangleShape object5; //침대
     sf::RectangleShape object6; //폰
 
+    sf::FloatRect trashRect;
     sf::FloatRect bathroomRect; 
     sf::FloatRect bedRect;
+    sf::FloatRect doorRect;
+    sf::FloatRect booksRect;
 
     sf::RectangleShape room; //방 배경 객체
     sf::Texture textureSave; //save 버튼 텍스쳐
@@ -336,9 +329,29 @@ void Level1::update(sf::RenderWindow& window, float dt) {
         actionText.setString("");
     }
 
+    if (isFadeoutEnter) {
+        fadeValue += 1;
+        fade.setFillColor(sf::Color(0, 0, 0, fadeValue));
+    }
+    if (isFadeinEnter) {
+        fadeValue -= 1;
+        fade.setFillColor(sf::Color(0, 0, 0, fadeValue));
+    }
+    if (fadeValue >= 255) {
+        isFadeoutEnter = false;
+        isFadeinEnter = true;
+    }
+    if (fadeValue <= 0) {
+        isFadeinEnter = false;
+    }
+
+    
+
+
     for (auto& line : lines) {
         window.draw(line);
     }
+
     printStatus(window, p1);
     window.draw(room);
     window.draw(save);
@@ -352,6 +365,7 @@ void Level1::update(sf::RenderWindow& window, float dt) {
     window.draw(p1.player);
     window.draw(actionText);
     window.draw(questionText);
+    window.draw(fade);
 }
 
 // ************************** handleinput **************************
@@ -411,19 +425,38 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
             questionText.setString(L"투자할 비트코인을 고르자\n1: 비트코스\n2: 스트라티스\n3: 스택스\n4: 스팀달러");
         }
         if (bathroomRect.contains(p1.player.getPosition()) && isBathroomEnter == false && questionText.getString() == L"") {
-            if (actionTextClock.getElapsedTime().asSeconds() < 2.5) actionText.setString(L"");
+            if (actionTextClock.getElapsedTime().asSeconds() < 3) actionText.setString(L"");
             isBathroomEnter = true;
             questionText.setString(L"몸을 씻을까? Y/N");
         }
         if (bedRect.contains(p1.player.getPosition()) && isBedEnter == false && questionText.getString() == L"") {
-            if (actionTextClock.getElapsedTime().asSeconds() < 2.5) actionText.setString(L"");
+            if (actionTextClock.getElapsedTime().asSeconds() < 3) actionText.setString(L"");
             isBedEnter = true;
             questionText.setString(L"지금 잠을 잘까? Y/N");
         }
         if (phone.body.contains(p1.player.getPosition()) && phone.isPhoneEnter == false && questionText.getString() == L"") {
-            if (actionTextClock.getElapsedTime().asSeconds() < 2.5) actionText.setString(L"");
+            if (actionTextClock.getElapsedTime().asSeconds() < 3) actionText.setString(L"");
             phone.isPhoneEnter = true;
             questionText.setString(L"폰으로 배달을 시킬까? Y/N");
+        }
+        if (doorRect.contains(p1.player.getPosition()) && isDoorEnter == false && questionText.getString() == L"") {
+            if (actionTextClock.getElapsedTime().asSeconds() < 3) actionText.setString(L"");
+            isDoorEnter = true;
+            questionText.setString(L"편의점 알바하러 갈까? Y/N");
+        }
+        if (booksRect.contains(p1.player.getPosition()) && isBooksEnter == false && questionText.getString() == L"") {
+            if (actionTextClock.getElapsedTime().asSeconds() < 3) actionText.setString(L"");
+            isBooksEnter = true;
+            actionText.setString(L"책이다....\n읽고 싶지는 않다");
+            actionTextClock.restart();
+            isBooksEnter = false;
+        }
+        if (trashRect.contains(p1.player.getPosition()) && isTrashEnter == false && questionText.getString() == L"") {
+            if (actionTextClock.getElapsedTime().asSeconds() < 3) actionText.setString(L"");
+            isTrashEnter = true;
+            actionText.setString(L"쓰레기들이다\n배달 시켜먹고 남은 쓰레기, 맥주캔 등이 나뒹굴고 있다..\n치우기에는 너무 귀찮은 것 같다.");
+            actionTextClock.restart();
+            isTrashEnter = false;
         }
     }
 
@@ -434,6 +467,27 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
             coin.selectBitcoin(coin.selectedCoinIndex);
             coin.isCoinEnter = false;
             coin.isChoosingCoin = true;
+        }
+        else if (phone.isPhoneEnter && questionText.getString() == L"뭘 먹을까?\n1:제육볶음\n2:낙곱새\n3:마라탕\n4:벌꿀집 아이스크림") {
+            phone.selectedFoodIndex = event.key.code - sf::Keyboard::Num1;
+            std::wstring food = phone.eatFood();
+            if (p1.money > phone.prices[phone.selectedFoodIndex]) {
+                p1.money -= phone.prices[phone.selectedFoodIndex];
+                p1.hunger += phone.hunger[phone.selectedFoodIndex];
+                p1.stamina -= 5;
+                questionText.setString(L"");
+                actionText.setString(std::to_wstring(phone.prices[phone.selectedFoodIndex]) + 
+                    L"원으로 " + food + L"를 먹었습니다" + L"\n" + food + L"를 통해 배고픔을 " + 
+                    std::to_wstring(phone.hunger[phone.selectedFoodIndex]) + L"만큼 채웠습니다");
+                actionTextClock.restart();
+                phone.isPhoneEnter = false;
+            }
+            else {
+                questionText.setString(L"");
+                actionText.setString(L"돈이 부족합니다!");
+                actionTextClock.restart();
+                phone.isPhoneEnter = false;
+            }
         }
     }
     else if (coin.isChoosingCoin && !coin.isCoinEnter) {
@@ -500,7 +554,7 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                     p1.clean -= 40;
                     questionText.setString(L"");
                     actionText.setString(L"자고 일어났습니다\n개운하네요");
-                    //화면 페이드 아웃
+                    isFadeoutEnter = true;
                     actionTextClock.restart();
                     isBedEnter = false;
                 }
@@ -512,9 +566,8 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                 }   
             }
             else if (phone.isPhoneEnter) {
-                if (p1.hunger < 20) {
+                if (p1.hunger < 100) {
                     questionText.setString(L"뭘 먹을까?\n1:제육볶음\n2:낙곱새\n3:마라탕\n4:벌꿀집 아이스크림");
-                    phone.isPhoneEnter = true;
                 }
                 else {
                     questionText.setString(L"");
@@ -523,20 +576,34 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                     phone.isPhoneEnter = false;
                 }
             }
-            else if ((event.key.code == sf::Keyboard::Num1 || event.key.code == sf::Keyboard::Num2 ||
-                event.key.code == sf::Keyboard::Num3 || event.key.code == sf::Keyboard::Num4) && phone.isPhoneEnter) {
-                int foodindex = event.key.code - sf::Keyboard::Num1;
-                phone.selectFood(foodindex);
-                questionText.setString(phone.getFood(foodindex) + L"를 드시겠습니까? Y/N");
+            else if (isDoorEnter){
+                isFadeoutEnter = true;
+                if (p1.stamina > 60) {
+                    p1.stamina -= 60;
+                    p1.hunger -= 60;
+                    p1.clean -= 30;
+                    p1.money += 57720;
+                    questionText.setString(L"");
+                    actionText.setString(L"알바를 마치고 집에 돌아왔다....\n지친다 지쳐");
+                    actionTextClock.restart();
+                    isDoorEnter = false;
+                }
+                else {
+                    questionText.setString(L"");
+                    actionText.setString(L"알바에 갈 힘이 없다.. 그냥 쉴래....");
+                    actionTextClock.restart();
+                    isDoorEnter = false;
+                }
             }
 
         }
         if (event.key.code == sf::Keyboard::N) {
-            if (isBathroomEnter || isBedEnter || phone.isPhoneEnter) {
+            if (isBathroomEnter || isBedEnter || phone.isPhoneEnter || isDoorEnter) {
                 questionText.setString(L"");
                 isBathroomEnter = false;
                 isBedEnter = false;
                 phone.isPhoneEnter = false;
+                isDoorEnter = false;
             }
         }
     }
@@ -596,7 +663,7 @@ void Level1::handleinput(sf::RenderWindow& window, sf::Event& event) {
                             p1.money = std::stoi(line.substr(line.find("money: ") + 7));
                         }
                         else if (line.find("stamina: ") != std::string::npos) {
-                            p1.stamina = std::stoi(line.substr(line.find("stamina: ") + 7));
+                            p1.stamina = std::stoi(line.substr(line.find("stamina: ") + 9));
                         }
                         else if (line.find("clean: ") != std::string::npos) {
                             p1.clean = std::stoi(line.substr(line.find("clean: ") + 7));
@@ -662,10 +729,23 @@ Menu::Menu() {
 }
 
 Level1::Level1() {
+    fadeValue = 0;
     isBedEnter = false;
+    isDoorEnter = false;
+    isBooksEnter = false;
+    isTrashEnter = false;
+    isFadeinEnter = false;
+    isFadeoutEnter = false;
     isBathroomEnter = false;
+
     bathroomRect = { 560, 0, 50, 100 };
+    trashRect = { 0, 300 , 220, 200 };
+    booksRect = { 230,80,265, 80 };
     bedRect = { 670, 0, 300, 250 };
+    doorRect = {0, 0, 100, 100};
+
+    fade.setSize(sf::Vector2f(1000, 520));
+    fade.setFillColor(sf::Color(0, 0, 0, fadeValue));
 
     if (!font.loadFromFile(".\\lib\\Maplestory Light.ttf")) { //폰트 업로드
         std::cout << "Could not load font" << std::endl;
